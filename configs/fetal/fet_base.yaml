@@ -1,0 +1,73 @@
+n_features: 32
+w_spatial: 1e-3
+w_grad: 0
+w_ncc: 0
+w_residual: 0.05
+w_tv_reg: 0.1
+w_div: 5e-4
+w_ma: 0.1
+w_jac: 1
+se3: false
+data loading:
+  dataset: fetal
+  subset: even
+
+static:
+  n_input_dims: 3
+  encoding_config:
+    otype: HashGrid
+    n_levels: 12
+    n_features_per_level: 2
+    log2_hashmap_size: 20
+    base_resolution: 16
+    per_level_scale: 1.28
+  network_config:
+    otype: FullyFusedMLP
+    activation: ReLU
+    output_activation: None
+    n_neurons: 64
+    n_hidden_layers: 1
+
+deformation:
+  n_input_dims: 4
+  n_output_dims: 3
+  encoding_config:
+    otype: HashGrid
+    n_levels: 8
+    n_features_per_level: 4
+    log2_hashmap_size: 21
+    base_resolution: 16
+    per_level_scale: 1.4
+  network_config:
+    otype: FullyFusedMLP
+    activation: ReLU
+    output_activation: None
+    n_neurons: 64
+    n_hidden_layers: 3
+
+
+residual:
+  n_input_dims: 4
+  encoding_config:
+    otype: HashGrid
+    n_levels: 4
+    n_features_per_level: 2
+    log2_hashmap_size: 16
+    base_resolution: 16
+    per_level_scale: 1.8
+  network_config:
+    otype: FullyFusedMLP
+    activation: ReLU
+    output_activation: None
+    n_neurons: 64
+    n_hidden_layers: 1
+
+full_decoder:
+  n_output_dims: 1
+  network_config:
+    otype: FullyFusedMLP
+    activation: ReLU
+    output_activation: None
+    n_neurons: 64
+    n_hidden_layers: 1
+    

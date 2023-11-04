@@ -1,0 +1,23 @@
+random seed: 42
+paths:
+  slurm output dir: $NFS/code/sinf/results
+optimizer:
+  type: Adam
+  max steps: 20000
+  learning rate: 1e-4
+  weight decay: 1e-8
+optimizer init:
+  type: Adam
+  max steps: 5000
+  learning rate: 1e-4
+scheduler:
+  type: cosine
+  T max: 20000
+  eta min: 1e-7
+data loading:
+  domain:
+    type: orthotope
+    dims:
+    - 2
+    - 2
+    - 2
