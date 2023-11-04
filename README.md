@@ -2,16 +2,16 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/clintonjwang/sinf/blob/main/LICENSE)
 
-This repository contains the PyTorch implementation of the paper **Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series**.
+This repository contains the PyTorch implementation of the paper **Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series**, accepted by [Medical Imaging Meets NeurIPS 2023](https://sites.google.com/view/med-neurips2023).
 
-![](teaser.png)
+![img](teaser.png)
 
 ## Environment Setup
 
-Run the following command to clone the repo:
+Clone this repo:
 
 ```shell
-git clone https://github.com/clintonjwang/sinf.git
+git clone https://github.com/Kidrauh/neural-atlasing.git
 ```
 
 ### General Environment
@@ -40,7 +40,7 @@ When the packages are installed, run `pip install -e .` to install the code fram
 
 ### WanDB Setup
 
-We use [WanDB](https://wandb.ai/) for runtime status inspection. You should register for an account if you don't have one, and save your own WanDB API key locally in `.wandb` file. More specifically, please organize your directory structure like this:
+We use [WanDB](https://wandb.ai/) for runtime status inspection. You should register for an account if you don't have one, and save your own WanDB API key locally in `.wandb` file. Please explicitly set the environment variable `$NFS` in your own computer and organize your directory structure like this:
 
 ```
 |-- $NFS
@@ -54,7 +54,7 @@ We use [WanDB](https://wandb.ai/) for runtime status inspection. You should regi
 
 Our fetal BOLD MRI dataset is private, but we offer the structure of the dataset below, so that as long as you organize your own fetal MRI dataset following our instruction, the code can run normally.
 
-Suppose we have several fetal MRI subjects, named after subject1, subject2, etc., and each subject contains a sequence of fetal MRI nifti files and their corresponding segmentation files (either placental or multi-label segmentation). For atlas-as-brigde evaluation, suppose the indices of images or segmentations of each pair are stored in `pairs.txt`. You should organize your dataset as below:
+Please explicitly set the environment variable `$DS_DIR` in your own computer first. Suppose we have several fetal MRI subjects, named after subject1, subject2, etc., and each subject contains a sequence of fetal MRI nifti files and their corresponding segmentation files (either placental or multi-label segmentation). For atlas-as-brigde evaluation, suppose the indices of images or segmentations of each pair are stored in `pairs.txt`, where each row of `pairs.txt` only contains two indices separated by a space. You should organize your dataset as below:
 
 ```
 |-- $DS_DIR
@@ -78,4 +78,3 @@ Suppose we have several fetal MRI subjects, named after subject1, subject2, etc.
 ```
 
 ## Training
-
