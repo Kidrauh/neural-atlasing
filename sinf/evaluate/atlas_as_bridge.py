@@ -156,33 +156,32 @@ def main():
         np.random.seed(kwargs["random seed"])
         torch.manual_seed(kwargs["random seed"])
 
-    seg_path = f'$DS_DIR/{subject_id}/segs'
+    seg_path = osp.join(DS_DIR, f'{subject_id}/segs')
     seg_list = sorted(glob.glob(os.path.join(seg_path, '*')))
-    frame_path = f'$DS_DIR/{subject_id}/images'
+    frame_path = osp.join(DS_DIR, f'{subject_id}/images')
     frame_list = sorted(glob.glob(os.path.join(frame_path, '*')))
     
-    with open(f'$DS_DIR/{subject_id}/pairs.txt', 'r') as f:
+    with open(osp.join(DS_DIR, f'{subject_id}/pairs.txt'), 'r') as f:
         pairs = f.readlines()
         pairs = [pair.strip().split(' ') for pair in pairs]
         pairs = [[int(pair[0]), int(pair[1])] for pair in pairs]
         seg_pairs = [[seg_list[pair[0]], seg_list[pair[1]]] for pair in pairs]
         img_pairs = [[frame_list[pair[0]], frame_list[pair[1]]] for pair in pairs]
 
-    video, affine = fetal.get_video_for_subject(kwargs["subject_id"],
-                                        subset=kwargs['data loading']['subset'])
+    video, affine = fetal.get_video_for_subject(kwargs["subject_id"])
     N = video.shape[-1]
     frame_shape = video.shape[:-1]
     fourier_shape = (16, 16, 16)
 
     model = mlp.HashMLPField(frame_shape, fourier_shape, **kwargs).cuda()
-    weight_path = osp.join(f'$NFS/code/sinf/results/{job_id}/weights_{job_id}.pt')
+    weight_path = osp.join(NFS, f'/code/sinf/results/{job_id}/weights_{job_id}.pt')
     model.load_state_dict(torch.load(weight_path))
     model.eval()
 
     dice1, dice2, dice3, dice4, dice5, dice_avg, dice_weighted_avg = atlas_bridge_dice(frame_shape, fourier_shape, N, model, pairs, seg_pairs)
     ncc = atlas_bridge_ncc(frame_shape, fourier_shape, N, model, pairs, img_pairs)
 
-    out_path = osp.join(f'$NFS/code/sinf/results/{job_id}/stats.txt')
+    out_path = osp.join(NFS, f'code/sinf/results/{job_id}/stats.txt')
     with open(out_path, "a") as f:
         f.write(str(dice_weighted_avg))
         f.write("\n")

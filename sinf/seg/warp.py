@@ -132,17 +132,14 @@ def main():
         np.random.seed(kwargs["random seed"])
         torch.manual_seed(kwargs["random seed"])
 
-    # subject_id = args["subject_id"]
-    # atlas_path = '/data/vision/polina/projects/wmh/inr-atlas/zongxc/code/sinf/results/test/atlas-C533L-mamse.nii.gz'
-    frame_path = f'/data/vision/polina/scratch/clintonw/datasets/fetal/ground_truth_with_seg/{subject_id}/image'
+    frame_path = osp.join(osp.expandvars('$DS_DIR'), f'{subject_id}/images')
     frame_list = glob.glob(os.path.join(frame_path, '*'))
     frame_list.sort()
-    seg_path = f'/data/vision/polina/scratch/clintonw/datasets/fetal/ground_truth_with_seg/{subject_id}/seg'
+    seg_path = osp.join(osp.expandvars('$DS_DIR'), f'{subject_id}/segs')
     seg_list = glob.glob(os.path.join(seg_path, '*'))
     seg_list.sort()
 
-    video, affine = fetal.get_video_for_subject(kwargs["subject_id"],
-                                        subset=kwargs['data loading']['subset'])
+    video, affine = fetal.get_video_for_subject(kwargs["subject_id"])
     N = video.shape[-1]
     frame_shape = video.shape[:-1]
     fourier_shape = (16, 16, 16)

@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/clintonjwang/sinf/blob/main/LICENSE)
 
-This repository contains the PyTorch implementation of the paper **Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series**, accepted by [Medical Imaging Meets NeurIPS 2023](https://sites.google.com/view/med-neurips2023).
+This repository contains the PyTorch implementation of the paper **Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series**, accepted by [Medical Imaging Meets NeurIPS 2023](https://sites.google.com/view/med-neurips2023). Only **3D** MRI data can be processed.
 
 ![img](teaser.png)
 
@@ -36,8 +36,6 @@ Some key packages:
 - scipy
 - wandb
 
-When the packages are installed, run `pip install -e .` to install the code framework.
-
 ### WanDB Setup
 
 We use [WanDB](https://wandb.ai/) for runtime status inspection. You should register for an account if you don't have one, and save your own WanDB API key locally in `.wandb` file. Please explicitly set the environment variable `$NFS` in your own computer and organize your directory structure like this:
@@ -50,11 +48,29 @@ We use [WanDB](https://wandb.ai/) for runtime status inspection. You should regi
          |-- ...
 ```
 
+### Final Setup
+
+To finally setup the code, please execute:
+
+```shell
+cd $NFS/code/sinf
+pip install -e .
+```
+
 ## Dataset Structure
 
 Our fetal BOLD MRI dataset is private, but we offer the structure of the dataset below, so that as long as you organize your own fetal MRI dataset following our instruction, the code can run normally.
 
-Please explicitly set the environment variable `$DS_DIR` in your own computer first. Suppose we have several fetal MRI subjects, named after subject1, subject2, etc., and each subject contains a sequence of fetal MRI nifti files and their corresponding segmentation files (either placental or multi-label segmentation). For atlas-as-brigde evaluation, suppose the indices of images or segmentations of each pair are stored in `pairs.txt`, where each row of `pairs.txt` only contains two indices separated by a space. You should organize your dataset as below:
+Suppose we have several fetal MRI subjects, named after subject1, subject2, etc., and each subject contains a sequence of fetal MRI nifti files and their corresponding segmentation files (either placental or multi-label segmentation). For atlas-as-brigde evaluation, the indices of images or segmentations of each pair are stored in `pairs.txt`, and you should format it as below, with two index numbers at each row, separated by a single space:
+
+```
+id1 id2
+id1 id2
+id1 id2
+.......
+```
+
+And the whole dataset, including MRI images, segmentations, and pairs, shoudl be organized as below (please explicitly set the environment variable `$DS_DIR` in your own computer):
 
 ```
 |-- $DS_DIR
@@ -77,4 +93,23 @@ Please explicitly set the environment variable `$DS_DIR` in your own computer fi
    |-- ...
 ```
 
-## Training
+## Training & Atlas Construction
+
+If you're using slurm, you can directly run `sbatch scripts/fit_inr.sh JobName fet_base SubjectName`, where `JobName` and `SubjectName` are specified by yourself. Remember to adapt the slurm arguments in the script to your own setting.
+
+If you cannot use slurm, you could execute the following commands:
+
+```shell
+cd $NFS/code/sinf/sinf
+MKL_THREADING_LAYER=GNU python3 fit_inr.py -j=JobName -c=fet_base -s=SubjectName
+```
+
+After the training process is done, you can find the constructed atlas in `$NFS/code/sinf/results/{JobName}/atlas-{JobName}.nii.gz`.
+
+## Registration
+
+To register all MRIs of a certain subject to the constructed atlas, run `scripts/warp.sh JobName`, and the registered MRI time series are stored as `$NFS/code/sinf/results/{JobName}/{JobName}_WarpedToAtlas.mp4`.
+
+## Evaluation
+
+To conduct the atlas-as-bridge evaluation of segmentation DICE scores and Local Normalized Cross-Correlation (LNCC), run `scripts/eval.sh SubjectName JobName`, and the evaluation results are stored in `$NFS/code/sinf/results/{JobName}/stats.txt`.

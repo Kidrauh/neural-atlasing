@@ -15,6 +15,6 @@ sbatch <<EOT
 #SBATCH --tasks-per-node=1
 
 cd $NFS/code/sinf/sinf
-MKL_THREADING_LAYER=GNU python fit_inr.py -j=$1 -c=$2 -s=${3:-None} -t=${4:-0}
+MKL_THREADING_LAYER=GNU python fit_inr.py -j=$1 -c=$2 -s=${3:-None}
 exit()
 EOT
