@@ -6,6 +6,21 @@ This repository contains the PyTorch implementation of the paper **Dynamic Neura
 
 ![img](teaser.png)
 
+## Citation
+
+If you find anything in the paper or repository useful, please consider citing:
+
+```plaintext
+@misc{chi2023dynamic,
+      title={Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series}, 
+      author={Zeen Chi and Zhongxiao Cong and Clinton Wang and Y},
+      year={2023},
+      eprint={},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
+}
+```
+
 ## Environment Setup
 
 Clone this repo:
@@ -112,4 +127,4 @@ To register all MRIs of a certain subject to the constructed atlas, run `scripts
 
 ## Evaluation
 
-To conduct the atlas-as-bridge evaluation of segmentation DICE scores and Local Normalized Cross-Correlation (LNCC), run `scripts/eval.sh SubjectName JobName`, and the evaluation results are stored in `$NFS/code/sinf/results/{JobName}/stats.txt`.
+To conduct the atlas-as-bridge evaluation of segmentation DICE scores and Local Normalized Cross-Correlation (LNCC), run `scripts/eval.sh JobName`, and the evaluation results are stored in `$NFS/code/sinf/results/{JobName}/stats.txt`.
