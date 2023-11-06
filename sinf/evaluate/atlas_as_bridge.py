@@ -18,7 +18,7 @@ osp = os.path
 NFS = osp.expandvars("$NFS")
 DS_DIR = osp.expandvars("$DS_DIR")
 
-def warp_frame_seg_to_atlas(frame_seg_path, freq_coords, model, t):
+def warp_frame_seg_to_atlas(frame_seg_path, model, t):
     frame_seg = torch.from_numpy(
         nib.load(frame_seg_path).get_fdata()).cuda()
     frame_shape = frame_seg.shape
@@ -33,7 +33,7 @@ def warp_frame_seg_to_atlas(frame_seg_path, freq_coords, model, t):
     grid = torch.from_numpy(grid).contiguous().cuda()
     vel_to_disp = warp.DiffeomorphicTransform(frame_shape)
     with torch.no_grad():
-        velocity = model(coords, freq_coords, t)[-1]
+        velocity = model(coords, t)[-1]
     inv_displacement = vel_to_disp(-velocity)
     new_coords = grid + inv_displacement.reshape(*frame_shape, 3)
     new_coords = new_coords.unsqueeze(0)
@@ -43,7 +43,7 @@ def warp_frame_seg_to_atlas(frame_seg_path, freq_coords, model, t):
     return warped_seg
 
 
-def warp_frame_to_atlas(frame_path, freq_coords, model, t):
+def warp_frame_to_atlas(frame_path, model, t):
     frame = torch.from_numpy(
         nib.load(frame_path).get_fdata()).cuda()
     high = torch.quantile(frame, 0.999).item()
@@ -60,7 +60,7 @@ def warp_frame_to_atlas(frame_path, freq_coords, model, t):
     grid = torch.from_numpy(grid).contiguous().cuda()
     vel_to_disp = warp.DiffeomorphicTransform(frame_shape)
     with torch.no_grad():
-        velocity = model(coords, freq_coords, t)[-1]
+        velocity = model(coords, t)[-1]
     inv_displacement = vel_to_disp(-velocity)
     new_coords = grid + inv_displacement.reshape(*frame_shape, 3)
     new_coords = new_coords.unsqueeze(0)
@@ -70,49 +70,36 @@ def warp_frame_to_atlas(frame_path, freq_coords, model, t):
     return warped_frame
 
 
-def atlas_bridge_dice(frame_shape, fourier_shape, N, model, id_pairs, seg_pairs):
+def atlas_bridge_dice(frame_shape, N, model, id_pairs, seg_pairs, num_labels):
     coords = point_set.meshgrid_coords(*frame_shape, domain=[[0,1],[0,1],[0,1]])
-    freq_coords = point_set.meshgrid_coords(*fourier_shape, domain=[[0,1],[0,1],[0,1]])
     x = (np.arange(frame_shape[0]) - ((frame_shape[0] - 1) / 2)) / (frame_shape[0] - 1) * 2
     y = (np.arange(frame_shape[1]) - ((frame_shape[1] - 1) / 2)) / (frame_shape[1] - 1) * 2
     z = (np.arange(frame_shape[2]) - ((frame_shape[2] - 1) / 2)) / (frame_shape[2] - 1) * 2
     grid = np.rollaxis(np.array(np.meshgrid(x, y, z)), 0, 4)
     grid = np.swapaxes(grid, 0, 1)
     grid = torch.from_numpy(grid).contiguous().cuda()
+    labels = [i in range(1, num_labels + 1)]
     with torch.no_grad():
-        dice1 = []
-        dice2 = []
-        dice3 = []
-        dice4 = []
-        dice5 = []
-        dice_avg = []
         dice_weighted_avg = []
         for i in tqdm(range(len(seg_pairs))):
             t1 = torch.tensor(id_pairs[i][0] / N).cuda()
             t2 = torch.tensor(id_pairs[i][1] / N).cuda()
-            seg1_warped_to_atlas = warp_frame_seg_to_atlas(seg_pairs[i][0], freq_coords, model, t1)
+            seg1_warped_to_atlas = warp_frame_seg_to_atlas(seg_pairs[i][0], model, t1)
             seg2 = torch.from_numpy(
                 nib.load(seg_pairs[i][1]).get_fdata())
-            displacement = model(coords, freq_coords, t2)[1].type(torch.float32)
+            displacement = model(coords, t2)[1].type(torch.float32)
             new_coords = grid + displacement.reshape(*frame_shape, 3)
             new_coords = new_coords.unsqueeze(0)
             new_coords = new_coords[..., [2, 1, 0]]
             pred_ = F.grid_sample(
                 seg1_warped_to_atlas, new_coords, mode='nearest', padding_mode="border", align_corners=True)
             pred_ = pred_.squeeze()
-            dice1.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=[1], average='macro'))
-            dice2.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=[2], average='macro'))
-            dice3.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=[3], average='macro'))
-            dice4.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=[4], average='macro'))
-            dice5.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=[5], average='macro'))
-            dice_avg.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=[1, 2, 3, 4, 5], average='macro'))
-            dice_weighted_avg.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=[1, 2, 3, 4, 5], average='weighted'))
-    return np.mean(dice1), np.mean(dice2), np.mean(dice3), np.mean(dice4), np.mean(dice5), np.mean(dice_avg), np.mean(dice_weighted_avg)
+            dice_weighted_avg.append(sklearn.metrics.f1_score(seg2.int().reshape(-1), pred_.int().cpu().reshape(-1), labels=labels, average='weighted'))
+    return np.mean(dice_weighted_avg)
 
 
-def atlas_bridge_ncc(frame_shape, fourier_shape, N, model, id_pairs, img_pairs):
+def atlas_bridge_ncc(frame_shape, N, model, id_pairs, img_pairs):
     coords = point_set.meshgrid_coords(*frame_shape, domain=[[0,1],[0,1],[0,1]])
-    freq_coords = point_set.meshgrid_coords(*fourier_shape, domain=[[0,1],[0,1],[0,1]])
     x = (np.arange(frame_shape[0]) - ((frame_shape[0] - 1) / 2)) / (frame_shape[0] - 1) * 2
     y = (np.arange(frame_shape[1]) - ((frame_shape[1] - 1) / 2)) / (frame_shape[1] - 1) * 2
     z = (np.arange(frame_shape[2]) - ((frame_shape[2] - 1) / 2)) / (frame_shape[2] - 1) * 2
@@ -125,13 +112,13 @@ def atlas_bridge_ncc(frame_shape, fourier_shape, N, model, id_pairs, img_pairs):
         for i in tqdm(range(len(img_pairs))):
             t1 = torch.tensor(id_pairs[i][0] / N).cuda()
             t2 = torch.tensor(id_pairs[i][1] / N).cuda()
-            img1_warped_to_atlas = warp_frame_to_atlas(img_pairs[i][0], freq_coords, model, t1)
+            img1_warped_to_atlas = warp_frame_to_atlas(img_pairs[i][0], model, t1)
             img2 = torch.from_numpy(
                 nib.load(img_pairs[i][1]).get_fdata()).cuda()
             high = torch.quantile(img2, 0.999).item()
             img2[img2 > high] = high
             img2 = img2 / img2.max()
-            displacement = model(coords, freq_coords, t2)[1].type(torch.float32)
+            displacement = model(coords, t2)[1].type(torch.float32)
             new_coords = grid + displacement.reshape(*frame_shape, 3)
             new_coords = new_coords.unsqueeze(0)
             new_coords = new_coords[..., [2, 1, 0]]
@@ -145,6 +132,7 @@ def atlas_bridge_ncc(frame_shape, fourier_shape, N, model, id_pairs, img_pairs):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-j', '--job_id', default="manual")
+    parser.add_argument('-n', '--num_labels', type=int, default=1, help='Number of segmentation labels')
     args = parser.parse_args()
     job_id = args.job_id
     kwargs = jobs.get_job_args(job_id)
@@ -171,21 +159,20 @@ def main():
     video, affine = fetal.get_video_for_subject(kwargs["subject_id"])
     N = video.shape[-1]
     frame_shape = video.shape[:-1]
-    fourier_shape = (16, 16, 16)
 
-    model = mlp.HashMLPField(frame_shape, fourier_shape, **kwargs).cuda()
+    model = mlp.HashMLPField(frame_shape, **kwargs).cuda()
     weight_path = osp.join(NFS, f'/code/sinf/results/{job_id}/weights_{job_id}.pt')
     model.load_state_dict(torch.load(weight_path))
     model.eval()
 
-    dice1, dice2, dice3, dice4, dice5, dice_avg, dice_weighted_avg = atlas_bridge_dice(frame_shape, fourier_shape, N, model, pairs, seg_pairs)
-    ncc = atlas_bridge_ncc(frame_shape, fourier_shape, N, model, pairs, img_pairs)
+    dice_weighted_avg = atlas_bridge_dice(frame_shape, N, model, pairs, seg_pairs, args.num_labels)
+    ncc = atlas_bridge_ncc(frame_shape, N, model, pairs, img_pairs)
 
     out_path = osp.join(NFS, f'code/sinf/results/{job_id}/stats.txt')
     with open(out_path, "a") as f:
-        f.write(str(dice_weighted_avg))
+        f.write("DICE Weighted Average: " + str(dice_weighted_avg))
         f.write("\n")
-        f.write(str(ncc))
+        f.write("Localized NCC: " + str(ncc))
         f.write("\n")
 
 if __name__ == '__main__':

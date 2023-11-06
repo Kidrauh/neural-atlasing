@@ -1,7 +1,6 @@
 from sinf.data import fetal
 from sinf.utils import util, warp, jobs
 from sinf.inn import point_set
-from sinf.utils import args as args_module
 from sinf.inrs import mlp
 from tqdm import tqdm
 import torch
@@ -13,7 +12,6 @@ import glob
 import sys
 import cv2
 import torch.nn.functional as F
-import imageio
 osp = os.path
 
 
@@ -43,17 +41,14 @@ osp = os.path
 #             out.write(sliced_vid)
 #         out.release()
 
-def frame_warp_to_atlas(subject_id, job_id, frame_shape, fourier_shape, N, frame_path, model):
+def frame_warp_to_atlas(job_id, frame_shape, N, frame_path, model):
 
     out_path = osp.join(osp.expandvars(
         '$NFS'), f"code/sinf/results/{job_id}/{job_id}_WarpedToAtlas.mp4")
-    out = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(
-        *'mp4v'), 30, (112, 112), False)
+    out = cv2.VideoWriter(out_path, cv2.VideoWriter_fourcc(*'mp4v'), 30, (frame_shape[1], frame_shape[0]), False)
 
     coords = point_set.meshgrid_coords(
         *frame_shape, domain=[[0, 1], [0, 1], [0, 1]])
-    freq_coords = point_set.meshgrid_coords(
-        *fourier_shape, domain=[[0, 1], [0, 1], [0, 1]])
     vol_coords = coords.reshape(*frame_shape, 3)  # (112, 112, 80, 3)
     vel_to_disp = warp.DiffeomorphicTransform(frame_shape)
     x = (np.arange(frame_shape[0]) - ((frame_shape[0] - 1) / 2)) / (frame_shape[0] - 1) * 2
@@ -65,12 +60,8 @@ def frame_warp_to_atlas(subject_id, job_id, frame_shape, fourier_shape, N, frame
     with torch.no_grad():
         i = 0
         for t in tqdm(torch.linspace(0, 1, N+1, dtype=float, device='cuda')[:-1]):
-        # for t in tqdm(indices):
             current_frame = torch.from_numpy(
                 nib.load(frame_path[i]).get_fdata()).cuda()
-            # current_seg = torch.from_numpy(
-            #     nib.load(seg_path[i]).get_fdata()).cuda()
-            # current_frame[current_seg == 0] = 0
             high = torch.quantile(current_frame, 0.999).item()
             current_frame[current_frame > high] = high
             current_frame = current_frame / current_frame.max()
@@ -96,7 +87,7 @@ def frame_warp_to_atlas(subject_id, job_id, frame_shape, fourier_shape, N, frame
             # new_coords[..., 2] = 2 * new_coords[..., 2] - 1
             # new_coords = new_coords[..., [2, 1, 0]
             #                         ].unsqueeze(0).type(torch.float64)
-            velocity = model(coords, freq_coords, t)[-1].cuda()
+            velocity = model(coords, t)[-1].cuda()
             inv_displacement = vel_to_disp(-velocity)
             new_coords = grid + inv_displacement.reshape(*frame_shape, 3)
             new_coords = new_coords.unsqueeze(0)
@@ -104,11 +95,7 @@ def frame_warp_to_atlas(subject_id, job_id, frame_shape, fourier_shape, N, frame
             pred_ = F.grid_sample(
                 current_frame, new_coords, mode='bilinear', padding_mode="border", align_corners=True)
             pred_ = pred_.squeeze().cpu().numpy()
-
-            if subject_id == 'MAP-C508-S':
-                pred_frame = pred_[:, :, pred_.shape[2]//2+10]
-            else:
-                pred_frame = pred_[:, :, pred_.shape[2]//2]
+            pred_frame = pred_[:, :, pred_.shape[2]//2]
             max_intensity = np.percentile(pred_frame, 99.9)
             pred_frame[pred_frame > max_intensity] = max_intensity
             sliced_vid = ((pred_frame/pred_frame.max()) * 255).astype('uint8')
@@ -118,7 +105,6 @@ def frame_warp_to_atlas(subject_id, job_id, frame_shape, fourier_shape, N, frame
 
 
 def main():
-    # args = args_module.parse_args(sys.argv[1:])
     parser = argparse.ArgumentParser()
     parser.add_argument('-j', '--job_id', default="manual")
     args = parser.parse_args()
@@ -142,15 +128,14 @@ def main():
     video, affine = fetal.get_video_for_subject(kwargs["subject_id"])
     N = video.shape[-1]
     frame_shape = video.shape[:-1]
-    fourier_shape = (16, 16, 16)
 
-    model = mlp.HashMLPField(frame_shape, fourier_shape, **kwargs).cuda()
+    model = mlp.HashMLPField(frame_shape, **kwargs).cuda()
     weight_path = osp.join(osp.expandvars(
         '$NFS'), f"code/sinf/results/{job_id}/weights_{job_id}.pt")
     model.load_state_dict(torch.load(weight_path))
     model.eval()
 
-    frame_warp_to_atlas(subject_id, job_id, frame_shape, fourier_shape, N, frame_list, model)
+    frame_warp_to_atlas(job_id, frame_shape, N, frame_list, model)
 
 
 if __name__ == '__main__':

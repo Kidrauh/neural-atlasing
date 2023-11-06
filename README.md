@@ -1,8 +1,6 @@
 # Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/clintonjwang/sinf/blob/main/LICENSE)
-
-This repository contains the PyTorch implementation of the paper **Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series**, accepted by [Medical Imaging Meets NeurIPS 2023](https://sites.google.com/view/med-neurips2023). Only **3D** MRI data can be processed.
+This repository contains the PyTorch implementation of the paper **Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series**, which was accepted by [Medical Imaging Meets NeurIPS 2023](https://sites.google.com/view/med-neurips2023). Only **3D** MRI data can be processed, and MRIs within the same subject must be identical in image sizes.
 
 ![img](teaser.png)
 
@@ -13,7 +11,7 @@ If you find anything in the paper or repository useful, please consider citing:
 ```plaintext
 @misc{chi2023dynamic,
       title={Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series}, 
-      author={Zeen Chi and Zhongxiao Cong and Clinton Wang and Y},
+      author={Zeen Chi and Zhongxiao Cong and Clinton Wang and Yingcheng Liu and Esra Abaci Turk and P. Ellen Grant and S. Mazdak Abulnaga and Polina Golland and Neel Dey},
       year={2023},
       eprint={},
       archivePrefix={arXiv},
@@ -110,14 +108,7 @@ And the whole dataset, including MRI images, segmentations, and pairs, shoudl be
 
 ## Training & Atlas Construction
 
-If you're using slurm, you can directly run `sbatch scripts/fit_inr.sh JobName fet_base SubjectName`, where `JobName` and `SubjectName` are specified by yourself. Remember to adapt the slurm arguments in the script to your own setting.
-
-If you cannot use slurm, you could execute the following commands:
-
-```shell
-cd $NFS/code/sinf/sinf
-MKL_THREADING_LAYER=GNU python3 fit_inr.py -j=JobName -c=fet_base -s=SubjectName
-```
+To train the dynamic neural fields for atlas learning, run `scripts/fit_inr.sh JobName fet_base SubjectName`, where `JobName` and `SubjectName` are specified by yourself.
 
 After the training process is done, you can find the constructed atlas in `$NFS/code/sinf/results/{JobName}/atlas-{JobName}.nii.gz`.
 
@@ -127,4 +118,4 @@ To register all MRIs of a certain subject to the constructed atlas, run `scripts
 
 ## Evaluation
 
-To conduct the atlas-as-bridge evaluation of segmentation DICE scores and Local Normalized Cross-Correlation (LNCC), run `scripts/eval.sh JobName`, and the evaluation results are stored in `$NFS/code/sinf/results/{JobName}/stats.txt`.
+To conduct the atlas-as-bridge evaluation of segmentation DICE scores and Local Normalized Cross-Correlation (LNCC), run `scripts/eval.sh JobName NumLabels`, where `NumLabels` refers to the number of regions in your segmentations. For example, in our experiment we segmented the uterine to `NumLabels=5` parts, namely placenta, amniotic fluid, fetal body, fetal brain, and fetal eyes. The evaluation results are stored in `$NFS/code/sinf/results/{JobName}/stats.txt`.

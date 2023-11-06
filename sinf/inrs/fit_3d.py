@@ -21,7 +21,7 @@ F = torch.nn.functional
 DS_DIR = osp.expandvars("$DS_DIR")
 
 
-def fit_video(video, time_begin, affine, **kwargs):
+def fit_video(video, affine, **kwargs):
     job_id = kwargs["job_id"]
     subject_id = kwargs["subject_id"]
     n_features = kwargs["n_features"]
@@ -45,9 +45,6 @@ def fit_video(video, time_begin, affine, **kwargs):
     w_grad = float(kwargs['w_grad'])
     w_ncc = float(kwargs['w_ncc'])
     w_jac = float(kwargs['w_jac'])
-    if kwargs.get('decomposition', None) is not None:
-        w_prob_deform = float(kwargs['w_prob_deform'])
-        w_decompose = float(kwargs['w_decompose'])
     N = video.shape[-1]
     ma_size = N
 
@@ -236,23 +233,6 @@ def fit_video(video, time_begin, affine, **kwargs):
             gt = gt * 255 / denom
             wandb.log({"frame_pred": [wandb.Image(pred, caption=f"step {step}")],
                        "frame_gt": [wandb.Image(gt)], 'step': step})
-            # save weights
-            os.makedirs(kwargs['paths']["job output dir"] +
-                        '/weights_step', exist_ok=True)
-            torch.save(nf.state_dict(), kwargs['paths']
-                       ["job output dir"] + '/weights_step' + f'/weights_{subject_id}_{step}.pt')
-            # get time
-            time_now = time.time()
-            time_elapsed = time_now - time_begin
-            with open(f'{kwargs["paths"]["job output dir"]}/time.txt', "a") as f:
-                f.write("{}".format(time_elapsed/60))
-                f.write("\n")
-
-    time_now = time.time()
-    time_elapsed = time_now - time_begin
-    with open(f'{kwargs["paths"]["job output dir"]}/time.txt', "a") as f:
-        f.write("{}".format(time_elapsed/60))
-        f.write("\n")
 
     torch.save(nf.state_dict(), kwargs['paths']
                ["job output dir"] + f'/weights_{job_id}.pt')
@@ -272,13 +252,13 @@ def fit_video(video, time_begin, affine, **kwargs):
     return nf
 
 
-def main(args, time_begin):
+def main(args):
     if args['data loading']['dataset'] == 'fetal':
         video, affine = fetal.get_video_for_subject(args["subject_id"],
                                             subset=args['data loading']['subset'])
-    fit_video(video, time_begin, affine, **args)
+    fit_video(video, affine, **args)
 
 
-def construct_model(kwargs, frame_shape, fourier_shape):
+def construct_model(kwargs, frame_shape):
     nf = mlp.HashMLPField(frame_shape, **kwargs).cuda()
     return nf

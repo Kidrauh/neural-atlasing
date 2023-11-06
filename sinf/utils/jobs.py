@@ -17,7 +17,7 @@ def launch_job(config_name, subject='', prefix='man'):
         job_name = prefix+subject[-3:]
     elif config_name.startswith('nsd'):
         job_name = prefix+subject[-3:]
-    subprocess.run(f'$NFS/code/sinf/scripts/fit_inr.sh {job_name} {config_name} {subject}', shell=True)
+    subprocess.run(osp.join(osp.expandvars('$NFS'), f'/code/sinf/scripts/fit_inr.sh {job_name} {config_name} {subject}'), shell=True)
 
 def rename_job(job: str, new_name: str):
     os.rename(osp.join(RESULTS_DIR, job), osp.join(RESULTS_DIR, new_name))
@@ -39,6 +39,6 @@ def get_dataset_for_job(job: str):
 
 def load_model_for_job(job_id: str):
     kwargs = get_job_args(job_id)
-    nf = fit_3d.construct_model(kwargs, (112, 112, 80), (32, 32, 32))
+    nf = fit_3d.construct_model(kwargs, (112, 112, 80))
     nf.load_state_dict(torch.load(kwargs['paths']["job output dir"]+f'/weights_{job_id}.pt'))
     return nf.eval()

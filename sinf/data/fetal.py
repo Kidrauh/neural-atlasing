@@ -12,15 +12,11 @@ F = torch.nn.functional
 
 from sinf.utils import jobs, losses, util
 
-proc_data_root = osp.expandvars('$DS_DIR')
+data_root = osp.expandvars('$DS_DIR')
 
 
-# def get_video_for_subject(subj_id, subset='even'):
-#     assert subset in ('even', 'odd', 'seg', 'masked', 'bfc_masked', 'cot'), f'bad subset {subset}'
-#     return load_path(proc_data_root+f'/{subj_id}_{subset}.npy')
 def get_video_for_subject(subj_id, subset='even'):
-    assert subset in ('even', 'odd', 'seg', 'masked', 'bfc_masked', 'cot'), f'bad subset {subset}'
-    frames_path = proc_data_root + f'/{subj_id}/image'
+    frames_path = data_root + f'/{subj_id}/images'
     frames_list = sorted(glob.glob(os.path.join(frames_path,'*')))
     nifti_frame = nib.load(frames_list[0])
     video, affine = nifti_frame.get_fdata(), nifti_frame.affine
@@ -47,15 +43,15 @@ def get_video_for_subject(subj_id, subset='even'):
     return video, affine
 
 
-def load_path(path, clamp=None):
-    video = torch.as_tensor(np.load(path)).permute(1,2,3,0).float()
-    #low = video.flatten().kthvalue(int(.01*video.numel())).values.item()
-    low = video.min()
-    high = video.flatten().kthvalue(int(.98*video.numel())).values.item()
-    video = (video - low) / (high - low)
-    if clamp is not None:
-        video = torch.clamp(video, min=0, max=clamp)
-    return video
+# def load_path(path, clamp=None):
+#     video = torch.as_tensor(np.load(path)).permute(1,2,3,0).float()
+#     #low = video.flatten().kthvalue(int(.01*video.numel())).values.item()
+#     low = video.min()
+#     high = video.flatten().kthvalue(int(.98*video.numel())).values.item()
+#     video = (video - low) / (high - low)
+#     if clamp is not None:
+#         video = torch.clamp(video, min=0, max=clamp)
+#     return video
 
 
 
