@@ -1,6 +1,6 @@
 # Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series
 
-This repository contains the PyTorch implementation of the paper **Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series**, which was accepted by [Medical Imaging Meets NeurIPS 2023](https://sites.google.com/view/med-neurips2023). Only **3D** MRI data can be processed, and MRIs within the same subject must be identical in image sizes.
+This repository contains the PyTorch implementation of the paper **[Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series](https://arxiv.org/abs/2311.02874)**, which was accepted by [Medical Imaging Meets NeurIPS 2023](https://sites.google.com/view/med-neurips2023). Only **3D** MRI data can be processed, and MRIs within the same subject must be identical in image sizes.
 
 ![img](teaser.png)
 
@@ -13,7 +13,7 @@ If you find anything in the paper or repository useful, please consider citing:
       title={Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series}, 
       author={Zeen Chi and Zhongxiao Cong and Clinton Wang and Yingcheng Liu and Esra Abaci Turk and P. Ellen Grant and S. Mazdak Abulnaga and Polina Golland and Neel Dey},
       year={2023},
-      eprint={https://arxiv.org/abs/2311.02874},
+      eprint={2311.02874},
       archivePrefix={arXiv},
       primaryClass={cs.CV}
 }
