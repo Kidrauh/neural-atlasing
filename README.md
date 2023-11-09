@@ -11,11 +11,11 @@ If you find anything in the paper or repository useful, please consider citing:
 ```plaintext
 @misc{chi2023dynamic,
       title={Dynamic Neural Fields for Learning Atlases of 4D Fetal MRI Time-series}, 
-      author={Zeen Chi and Zhongxiao Cong and Clinton Wang and Yingcheng Liu and Esra Abaci Turk and P. Ellen Grant and S. Mazdak Abulnaga and Polina Golland and Neel Dey},
+      author={Zeen Chi and Zhongxiao Cong and Clinton J. Wang and Yingcheng Liu and Esra Abaci Turk and P. Ellen Grant and S. Mazdak Abulnaga and Polina Golland and Neel Dey},
       year={2023},
       eprint={2311.02874},
       archivePrefix={arXiv},
-      primaryClass={cs.CV}
+      primaryClass={eess.IV}
 }
 ```
 
